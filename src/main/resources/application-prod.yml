@@ -34,6 +34,10 @@ oauth:
 
 server:
   port: ${PORT:8080}
+  shutdown: graceful
+
+spring.lifecycle:
+  timeout-per-shutdown-phase: 30s
 
 logging:
   level:
