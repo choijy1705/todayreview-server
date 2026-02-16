@@ -1,0 +1,1 @@
+ALTER TABLE daily_records DROP CONSTRAINT daily_records_user_id_date_key;
