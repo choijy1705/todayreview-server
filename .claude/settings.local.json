@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew build*)",
+      "Bash(./gradlew test*)",
+      "Bash(./gradlew bootRun*)",
+      "Bash(./gradlew clean*)",
+      "Bash(docker compose *)",
+      "Bash(ls *)",
+      "Bash(cat build/reports/*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(./gradlew bootRun|docker compose up(?!.*-d))\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho '[Hook] BLOCKED: Long-running server must run in background' >&2\necho '[Hook] Use: ./gradlew bootRun &  OR  docker compose up -d' >&2\nexit 1"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm -rf|drop table|DROP TABLE|truncate|TRUNCATE)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho '[Hook] BLOCKED: Destructive operation detected. Please confirm with user first.' >&2\nexit 1"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.kt$\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  println=$(grep -n 'println(' \"$file_path\" 2>/dev/null || true)\n  if [ -n \"$println\" ]; then\n    echo \"[Hook] WARNING: println() found in $file_path\" >&2\n    echo \"$println\" | head -5 >&2\n    echo \"[Hook] Use proper logging instead of println\" >&2\n  fi\nfi"
+          }
+        ]
+      }
+    ]
+  }
+}
